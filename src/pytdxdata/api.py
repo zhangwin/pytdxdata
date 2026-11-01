@@ -771,12 +771,7 @@ class TdxData:
         await self._std_pool.release(pc)
         return rows
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_snapshot(self, symbols: str | Sequence[str]) -> list[SymbolSnapshot]:
-=======
     async def get_snapshot(self, symbols: str | Sequence[str],codetype:int=None) -> list[SymbolSnapshot]:
->>>>>>> Stashed changes
         """个股特征快照（当日/换手/活跃度等，仅 A股）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "个股特征快照")
@@ -795,12 +790,8 @@ class TdxData:
                 out.append(rec)
         return out
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_auction(self, symbols: str | Sequence[str]) -> list[AuctionItem]:
-=======
+
     async def get_auction(self, symbols: str | Sequence[str],codetype:int=None) -> list[AuctionItem]:
->>>>>>> Stashed changes
         """集合竞价（仅 A股）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "集合竞价")
@@ -812,12 +803,7 @@ class TdxData:
             out.extend(items)
         return out
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_capital_flow(self, symbols: str | Sequence[str]) -> list[CapitalFlow]:
-=======
     async def get_capital_flow(self, symbols: str | Sequence[str],codetype:int=None) -> list[CapitalFlow]:
->>>>>>> Stashed changes
         """个股资金流向（仅 A股）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "资金流向")
@@ -844,12 +830,9 @@ class TdxData:
         adjust: Adjust | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
-<<<<<<< Updated upstream
         concurrency: int = 6,
         pipeline: int | None = None,
-=======
-        concurrency: int = 6,codetype:int=None
->>>>>>> Stashed changes
+        codetype:int=None
     ) -> list[SecurityBar]:
         """K线（多标的并发，自动判指数、自动复权选路、自动跨市场）。
 
@@ -875,8 +858,7 @@ class TdxData:
             仍需逐只二分定位，会回落到逐只路径（结果一致，只是慢一些）。
         """
         period = KlinePeriod(int(period))
-<<<<<<< Updated upstream
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
 
         # 批量路径：一次请求一标的，逐只走就是 N 次往返；多连接流水线能把往返压掉
         if len(syms) >= _BULK_MIN_SYMS and pipeline != 1:
@@ -885,10 +867,6 @@ class TdxData:
                 start_date=start_date, end_date=end_date, pipeline=pipeline)
             if bulk is not None:
                 return bulk
-
-=======
-        syms = parse_symbols(symbols,codetype)
->>>>>>> Stashed changes
         sem = asyncio.Semaphore(max(1, concurrency))
 
         async def one(sym: Symbol) -> list[SecurityBar]:
@@ -1648,12 +1626,7 @@ class TdxData:
     # 五、公司信息
     # ================================================================== #
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_xdxr(self, symbols: str | Sequence[str]) -> list[XdxrRecord]:
-=======
     async def get_xdxr(self, symbols: str | Sequence[str],codetype:int=None) -> list[XdxrRecord]:
->>>>>>> Stashed changes
         """除权除息历史，仅 A股。标的用字符串（``"sz000001"``）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "除权除息")
@@ -1671,12 +1644,7 @@ class TdxData:
             out.extend(recs)
         return out
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_finance(self, symbols: str | Sequence[str]) -> list[FinanceRecord]:
-=======
     async def get_finance(self, symbols: str | Sequence[str],codetype:int=None) -> list[FinanceRecord]:
->>>>>>> Stashed changes
         """财务快照（仅 A股）。无数据的标的会被跳过（原单标的接口返回 None）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "财务快照")
@@ -1830,12 +1798,7 @@ class TdxData:
                 break
         return items
 
-<<<<<<< Updated upstream
-    @framed
-    async def get_board_of(self, symbols: str | Sequence[str]) -> list[BelongBoard]:
-=======
     async def get_board_of(self, symbols: str | Sequence[str],codetype:int=None) -> list[BelongBoard]:
->>>>>>> Stashed changes
         """个股所属板块（仅 A股；``symbol`` 记录被查询的个股）。"""
         syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "个股所属板块")
