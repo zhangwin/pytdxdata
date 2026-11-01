@@ -65,6 +65,43 @@ def _lookup(text: str) -> tuple[int, str] | None:
         return int(member), EX
     return None
 
+def get_stock_market(symbol="", string=False):
+    """判断股票ID对应的证券市场匹配规则
+
+    ['50', '51', '60', '90', '110'] 为 sh
+    ['00', '12'，'13', '18', '15', '16', '18', '20', '30', '39', '115'] 为 sz
+    ['5', '6', '9'] 开头的为 sh， 其余为 sz
+
+    :param string: False 返回市场ID，否则市场缩写名称
+    :param symbol: 股票ID, 若以 'sz', 'sh' 开头直接返回对应类型，否则使用内置规则判断
+    :return 'sh' or 'sz'
+    """
+    assert isinstance(symbol, str), "stock code need str type"
+
+    market = "sh"
+
+    if symbol.startswith(("sh", "sz", "SH", "SZ")):
+        market = symbol[:2].lower()
+        
+    elif symbol.startswith(("50", "51", "60", "68", "90", "110", "113", "132", "204")):
+        market = "sh"
+    elif symbol.startswith(("00", "12", "13", "18", "15", "16", "18", "20", "30", "39", "115", "1318")):
+        market = "sz"
+    elif symbol.startswith(("5", "6", "91", "7","88")):
+        market = "sh"
+    elif symbol.startswith(("4", "8","92")):
+        market = "bj"
+
+    if string is False:
+        if market == "sh":
+            market = 1
+
+        if market == "sz":
+            market = 0
+
+        if market == "bj":
+            market = 2
+    return market
 
 def _hint() -> str:
     cn = "/".join(sorted(_CN_ALIASES))
@@ -144,7 +181,7 @@ def market_name(market: int) -> str:
     return prefix
 
 
-def parse_symbol(text: str) -> Symbol:
+def parse_symbol(text: str,codetype:int=None) -> Symbol:
     """字符串 -> Symbol。无法识别时抛 ValueError 并列出可用前缀。"""
     raw = text
     sym = str(text).strip()
@@ -168,12 +205,22 @@ def parse_symbol(text: str) -> Symbol:
 
     if sym.isdigit() and len(sym) == 6:
         # 裸 6 位 = 沪市指数（A股代码不唯一，股票必须带前缀）
-        return Symbol(market=int(Market.SH), code=sym, kind=INDEX, raw=raw)
+        if codetype is None or codetype==1:
+            if sym.startswith("88") or sym.startswith("000"):
+                market=int(Market.SH)
+            elif sym.startswith("399"):
+                market=int(Market.SZ)
+            elif sym.startswith("899"):
+                market=int(Market.BJ)
+            return Symbol(market=market, code=sym, kind=INDEX, raw=raw)
+        else:
+            market=get_stock_market(sym)
+            return Symbol(market=market, code=sym, kind=CN, raw=raw)
 
     raise ValueError(f"无法识别标的: {raw}（{_hint()}；裸6位数字=沪市指数）")
 
 
-def parse_symbols(symbols: str | Sequence[str] | None) -> list[Symbol]:
+def parse_symbols(symbols: str | Sequence[str] | None,codetype=None) -> list[Symbol]:
     """接受单个字符串 / 字符串序列 / Symbol 序列，去重并保持输入顺序。"""
     if symbols is None:
         raise ValueError("symbols 不能为空")
@@ -183,7 +230,7 @@ def parse_symbols(symbols: str | Sequence[str] | None) -> list[Symbol]:
     out: list[Symbol] = []
     seen: set[tuple[int, str]] = set()
     for item in items:
-        sym = item if isinstance(item, Symbol) else parse_symbol(item)
+        sym = item if isinstance(item, Symbol) else parse_symbol(item,codetype)
         if sym.as_pair() in seen:
             continue
         seen.add(sym.as_pair())

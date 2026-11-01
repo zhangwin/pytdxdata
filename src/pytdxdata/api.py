@@ -590,14 +590,14 @@ class TdxData:
         return unpack_payload(await self._cache.get_or_fetch(key, fetch))
 
     # ================================================================== #
-    # 二、报价
+    # 二、报价 时间有延时
     # ================================================================== #
 
     @framed
     async def get_quotes(self, symbols: str | Sequence[str], *,
                          fields: Sequence[int] | None = None,
                          concurrency: int | None = None,
-                         pipeline: bool = True
+                         pipeline: bool = True,codetype:int=None
                          ) -> list[SecurityQuote]:
         """报价，一次可跨市场、跨通道混合查询。
 
@@ -618,7 +618,7 @@ class TdxData:
             A股标准通道与扩展市场的可用字段不同：五档只在 A股标准通道有，
             名称只在 ``fields=`` / 扩展市场有，其余字段位统一落在 ``.fields``。
         """
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         bits = [int(b) for b in fields] if fields else None
         tag = "mac:" + _fields_tag(bits) if bits else "std"
         key = CacheKey.quote_key([s.as_pair() for s in syms], tag=tag)
@@ -771,10 +771,14 @@ class TdxData:
         await self._std_pool.release(pc)
         return rows
 
+<<<<<<< Updated upstream
     @framed
     async def get_snapshot(self, symbols: str | Sequence[str]) -> list[SymbolSnapshot]:
+=======
+    async def get_snapshot(self, symbols: str | Sequence[str],codetype:int=None) -> list[SymbolSnapshot]:
+>>>>>>> Stashed changes
         """个股特征快照（当日/换手/活跃度等，仅 A股）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "个股特征快照")
         out: list[SymbolSnapshot] = []
         for sym in syms:
@@ -791,10 +795,14 @@ class TdxData:
                 out.append(rec)
         return out
 
+<<<<<<< Updated upstream
     @framed
     async def get_auction(self, symbols: str | Sequence[str]) -> list[AuctionItem]:
+=======
+    async def get_auction(self, symbols: str | Sequence[str],codetype:int=None) -> list[AuctionItem]:
+>>>>>>> Stashed changes
         """集合竞价（仅 A股）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "集合竞价")
         out: list[AuctionItem] = []
         for sym in syms:
@@ -804,10 +812,14 @@ class TdxData:
             out.extend(items)
         return out
 
+<<<<<<< Updated upstream
     @framed
     async def get_capital_flow(self, symbols: str | Sequence[str]) -> list[CapitalFlow]:
+=======
+    async def get_capital_flow(self, symbols: str | Sequence[str],codetype:int=None) -> list[CapitalFlow]:
+>>>>>>> Stashed changes
         """个股资金流向（仅 A股）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "资金流向")
         out: list[CapitalFlow] = []
         for sym in syms:
@@ -832,8 +844,12 @@ class TdxData:
         adjust: Adjust | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+<<<<<<< Updated upstream
         concurrency: int = 6,
         pipeline: int | None = None,
+=======
+        concurrency: int = 6,codetype:int=None
+>>>>>>> Stashed changes
     ) -> list[SecurityBar]:
         """K线（多标的并发，自动判指数、自动复权选路、自动跨市场）。
 
@@ -859,6 +875,7 @@ class TdxData:
             仍需逐只二分定位，会回落到逐只路径（结果一致，只是慢一些）。
         """
         period = KlinePeriod(int(period))
+<<<<<<< Updated upstream
         syms = parse_symbols(symbols)
 
         # 批量路径：一次请求一标的，逐只走就是 N 次往返；多连接流水线能把往返压掉
@@ -869,6 +886,9 @@ class TdxData:
             if bulk is not None:
                 return bulk
 
+=======
+        syms = parse_symbols(symbols,codetype)
+>>>>>>> Stashed changes
         sem = asyncio.Semaphore(max(1, concurrency))
 
         async def one(sym: Symbol) -> list[SecurityBar]:
@@ -1330,7 +1350,7 @@ class TdxData:
     async def get_indicators(
         self, symbols: str | Sequence[str], indicators: Sequence[str], *,
         period: KlinePeriod = KlinePeriod.DAY, count: int = 30,
-        adjust: Adjust | None = None, params: dict | None = None,
+        adjust: Adjust | None = None, params: dict | None = None,codetype:int=None
     ) -> list[IndicatorSet]:
         """K线 + 技术指标（MACD/KDJ/RSI/BOLL/MA/EMA）。
 
@@ -1338,7 +1358,7 @@ class TdxData:
         指标序列与 ``bars`` 等长（尾部对齐）。
         """
         from .indicator import compute_indicators
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         bars = await self.get_bars(syms, period, count=max(120 + count, 200),
                                    adjust=adjust)
         grouped: dict[str, list[SecurityBar]] = {}
@@ -1362,14 +1382,14 @@ class TdxData:
         return out
 
     # ================================================================== #
-    # 四、逐笔成交 / 分时
+    # 四、逐笔成交 / 分时 实时行情
     # ================================================================== #
 
     @framed
     async def get_ticks(
         self, symbols: str | Sequence[str], *,
         date: int | None = None, start: int = 0, count: int | None = None,
-        concurrency: int = 6,
+        concurrency: int = 6,codetype:int=None
     ) -> list[TransactionRecord]:
         """逐笔成交（A股 MAC 0x122F / 港股 EX 0x23FC·0x2406 / 其他扩展市场 MAC）。
 
@@ -1400,7 +1420,7 @@ class TdxData:
 
         详见 :class:`~pytdxdata.models.TransactionRecord` 的类注释。
         """
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         sem = asyncio.Semaphore(max(1, concurrency))
 
         async def one(sym: Symbol) -> list[TransactionRecord]:
@@ -1550,7 +1570,7 @@ class TdxData:
     @framed
     async def get_minutes(
         self, symbols: str | Sequence[str], *,
-        date: int | None = None, sampling: bool = False, concurrency: int = 6,
+        date: int | None = None, sampling: bool = False, concurrency: int = 6,codetype:int=None
     ) -> list[MinuteBar]:
         """分时（A股 MAC 0x122D / 扩展市场 0x122D 同构）。
 
@@ -1564,7 +1584,7 @@ class TdxData:
             ``list[MinuteBar]``，按入参标的顺序拼接，每条带 ``symbol``/``market``/
             ``code``/``date``（扩展市场的动量落在 ``fields["momentum"]``）。
         """
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         sem = asyncio.Semaphore(max(1, concurrency))
 
         async def one(sym: Symbol) -> list[MinuteBar]:
@@ -1628,10 +1648,14 @@ class TdxData:
     # 五、公司信息
     # ================================================================== #
 
+<<<<<<< Updated upstream
     @framed
     async def get_xdxr(self, symbols: str | Sequence[str]) -> list[XdxrRecord]:
+=======
+    async def get_xdxr(self, symbols: str | Sequence[str],codetype:int=None) -> list[XdxrRecord]:
+>>>>>>> Stashed changes
         """除权除息历史，仅 A股。标的用字符串（``"sz000001"``）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "除权除息")
         out: list[XdxrRecord] = []
         for sym in syms:
@@ -1647,10 +1671,14 @@ class TdxData:
             out.extend(recs)
         return out
 
+<<<<<<< Updated upstream
     @framed
     async def get_finance(self, symbols: str | Sequence[str]) -> list[FinanceRecord]:
+=======
+    async def get_finance(self, symbols: str | Sequence[str],codetype:int=None) -> list[FinanceRecord]:
+>>>>>>> Stashed changes
         """财务快照（仅 A股）。无数据的标的会被跳过（原单标的接口返回 None）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "财务快照")
         out: list[FinanceRecord] = []
         for sym in syms:
@@ -1668,23 +1696,23 @@ class TdxData:
 
     async def get_price_limits(self, symbol: str, name: str | None = None,
                                pre_close: float | None = None,
-                               listed_days: int = 9999
+                               listed_days: int = 9999,codetype:int=None
                                ) -> tuple[float | None, float | None]:
         """涨跌停价（本地计算，无网络；仅 A股，指数/基金返回 (None, None)）。"""
-        sym = parse_symbol(symbol)
+        sym = parse_symbol(symbol,codetype)
         _reject_ex([sym], "涨跌停价")
         return compute_price_limits(Market(sym.market), sym.code, name, pre_close,
                                     listed_days)
 
     async def get_f10(self, symbol: str, section: str | None = None, *,
-                      offset: int = 0, length: int = 65535) -> list | str:
+                      offset: int = 0, length: int = 65535,codetype:int=None) -> list | str:
         """F10 公司资料（仅 A股）。
 
         ``section=None`` 返回目录（``list[CompanyInfoCategory]``，含 ``name``/
         ``filename``/``length``）；给了 ``section`` 则返回该条目正文
         （``str``，用 ``offset``/``length`` 分块读取长文）。
         """
-        sym = parse_symbol(symbol)
+        sym = parse_symbol(symbol,codetype)
         _reject_ex([sym], "F10")
         if section is None:
             return await self._execute_standard(
@@ -1802,10 +1830,14 @@ class TdxData:
                 break
         return items
 
+<<<<<<< Updated upstream
     @framed
     async def get_board_of(self, symbols: str | Sequence[str]) -> list[BelongBoard]:
+=======
+    async def get_board_of(self, symbols: str | Sequence[str],codetype:int=None) -> list[BelongBoard]:
+>>>>>>> Stashed changes
         """个股所属板块（仅 A股；``symbol`` 记录被查询的个股）。"""
-        syms = parse_symbols(symbols)
+        syms = parse_symbols(symbols,codetype)
         _reject_ex(syms, "个股所属板块")
         out: list[BelongBoard] = []
         for sym in syms:
